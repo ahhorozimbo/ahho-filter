@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AHHO Filter — Processamento de Imagens</title>
+  <meta name="description" content="Ferramenta web educacional para aprender processamento digital de imagens com OpenCV, direto no navegador.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="1" y="1" width="30" height="30" rx="8" fill="var(--accent)"/>
+        <path d="M16 6a10 10 0 0 1 0 20z" fill="#fff"/>
+        <circle cx="16" cy="16" r="10" fill="none" stroke="#fff" stroke-width="2.2"/>
+      </svg>
+      <div>
+        <h1>AHHO Filter</h1>
+        <p>Aprenda processamento de imagens aplicando filtros em tempo real</p>
+      </div>
+    </div>
+    <div class="top-right">
+      <span class="badge" title="As imagens são processadas no seu computador e não são enviadas a nenhum servidor">🔒 100% no navegador</span>
+      <div id="cv-status" class="cv-status loading" role="status">
+        <span class="dot"></span><span class="txt">Carregando OpenCV…</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Catálogo de filtros -->
+    <aside class="catalog" aria-label="Catálogo de filtros">
+      <input id="filter-search" type="search" placeholder="Buscar filtro…" aria-label="Buscar filtro">
+      <nav id="filter-list"></nav>
+    </aside>
+
+    <!-- Visualização -->
+    <section class="viewer-area">
+      <div class="card stage-card">
+        <div class="toolbar">
+          <label class="btn primary" for="file-input">⤒ Carregar imagem</label>
+          <input id="file-input" type="file" accept="image/*" hidden>
+          <button id="btn-sample" class="btn ghost">Imagem de exemplo</button>
+          <span class="sep"></span>
+          <div class="seg" role="group" aria-label="Modo de comparação">
+            <button id="mode-slider" class="active" aria-pressed="true">◧ Deslizar</button>
+            <button id="mode-side" aria-pressed="false">◫ Lado a lado</button>
+          </div>
+        </div>
+
+        <div id="dropzone" class="dropzone">
+          <div class="empty">
+            <svg class="empty-icon" viewBox="0 0 48 48" aria-hidden="true">
+              <rect x="4" y="8" width="40" height="32" rx="5" fill="none" stroke="currentColor" stroke-width="2.5"/>
+              <circle cx="16" cy="19" r="4" fill="currentColor"/>
+              <path d="M8 36l11-11 7 7 6-6 8 8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+            </svg>
+            <p class="big">Arraste uma imagem para cá</p>
+            <p>Também dá para colar com <kbd>Ctrl</kbd>+<kbd>V</kbd>.</p>
+            <div class="empty-actions">
+              <label class="btn primary" for="file-input">Escolher arquivo</label>
+              <button class="btn" type="button" onclick="document.getElementById('btn-sample').click()">Usar imagem de exemplo</button>
+            </div>
+          </div>
+          <div id="viewer" class="viewer mode-slider" hidden>
+            <figure class="pane before">
+              <canvas id="canvas-before"></canvas>
+              <figcaption>Antes</figcaption>
+            </figure>
+            <figure class="pane after">
+              <canvas id="canvas-after"></canvas>
+              <figcaption>Depois</figcaption>
+            </figure>
+            <div class="handle" aria-hidden="true"><span>⇆</span></div>
+            <input id="compare-range" class="compare-range" type="range" min="0" max="100" value="50" aria-label="Posição da comparação">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="btn-commit" class="btn primary" disabled title="Usa o resultado atual como entrada do próximo filtro">✓ Aplicar e continuar</button>
+          <button id="btn-undo" class="btn ghost" disabled>↶ Desfazer</button>
+          <button id="btn-reset" class="btn ghost" disabled>⟲ Original</button>
+          <span id="timing" class="timing"></span>
+          <button id="btn-download" class="btn" disabled>⤓ Baixar</button>
+        </div>
+      </div>
+
+      <div class="card pipeline">
+        <span class="label">Pipeline</span>
+        <ol id="pipeline-list"><li class="muted">Original</li></ol>
+      </div>
+
+      <details class="card histo" open>
+        <summary>Histograma de intensidade
+          <span class="legend"><span class="sw before"></span>Antes <span class="sw after"></span>Depois</span>
+        </summary>
+        <canvas id="histogram" width="768" height="120" aria-label="Histograma antes e depois"></canvas>
+        <div class="axis"><span>0 (preto)</span><span>128</span><span>255 (branco)</span></div>
+      </details>
+    </section>
+
+    <!-- Painel do filtro -->
+    <aside class="panel" aria-label="Detalhes do filtro">
+      <div id="panel-empty" class="muted pad">Escolha um filtro no catálogo para ver os parâmetros e a explicação.</div>
+      <div id="panel" hidden>
+        <p id="f-category" class="eyebrow"></p>
+        <h2 id="f-name"></h2>
+        <p id="f-desc"></p>
+        <form id="f-params" class="params" onsubmit="return false"></form>
+        <p id="f-info" class="info" hidden></p>
+        <button id="btn-defaults" class="btn small" type="button">Restaurar valores padrão</button>
+
+        <div class="tabs" role="tablist">
+          <button role="tab" data-tab="theory" class="active" aria-selected="true">Teoria</button>
+          <button role="tab" data-tab="code" aria-selected="false">Python</button>
+          <button role="tab" data-tab="pipeline" aria-selected="false">Script do pipeline</button>
+        </div>
+        <div id="tab-theory" class="tab-body"></div>
+        <div id="tab-code" class="tab-body" hidden>
+          <pre><code id="code-filter"></code></pre>
+          <button class="btn small copy" data-copy="code-filter">Copiar</button>
+        </div>
+        <div id="tab-pipeline" class="tab-body" hidden>
+          <p class="muted">Script Python equivalente a todos os passos do pipeline, incluindo o filtro atual.</p>
+          <pre><code id="code-pipeline"></code></pre>
+          <button class="btn small copy" data-copy="code-pipeline">Copiar</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <footer class="footer">
+    AHHO Filter · baseado no TCC de Antonio Hajime Harada Orozimbo (UENP, 2024) · processamento com
+    <a href="https://docs.opencv.org/4.10.0/d5/d10/tutorial_js_root.html" target="_blank" rel="noopener">OpenCV.js</a>
+  </footer>
+
+  <script src="js/filters.js"></script>
+  <script src="js/app.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js" onload="onOpenCvScriptLoaded()" onerror="onOpenCvScriptError()"></script>
+</body>
+</html>
