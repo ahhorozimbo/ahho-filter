@@ -2,6 +2,8 @@
 
 Ferramenta web educacional para aprender **processamento digital de imagens** aplicando filtros do OpenCV em tempo real, direto no navegador.
 
+**▶ Usar online:** https://ahhorozimbo.github.io/ahho-filter/
+
 É a reconstrução da ferramenta do TCC *"Explorando o Processamento de Imagens com OpenCV: uma ferramenta interativa para facilitar o aprendizado e aplicações práticas na web"* (Antonio Hajime Harada Orozimbo, Ciência da Computação, UENP, 2024).
 
 ## O que mudou em relação à versão do TCC
@@ -41,11 +43,9 @@ python -m http.server 8000
 
 Depois, abra http://localhost:8000. Na primeira vez, o navegador baixa o OpenCV.js (cerca de 10 MB) de `cdn.jsdelivr.net`.
 
-## Como publicar (GitHub Pages)
+## Publicação
 
-1. Crie um repositório no GitHub e envie esta pasta.
-2. Em **Settings → Pages**, escolha a branch `main` e a pasta `/ (root)`.
-3. O site fica disponível em `https://<seu-usuario>.github.io/<repositorio>/`.
+O site é publicado pelo GitHub Pages a partir da branch `main` (pasta raiz): cada push atualiza https://ahhorozimbo.github.io/ahho-filter/ em cerca de um minuto.
 
 ## Estrutura
 
